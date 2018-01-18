@@ -8,7 +8,7 @@
 * License: GPL2
 * Text Domain: woocommerce-auto-add-to-cart
 */
- 
+
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 // Check if WooCommerce is active (https://docs.woothemes.com/document/create-a-plugin/)
@@ -17,20 +17,20 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 	class WooCommerce_Auto_Add {
 
 		public function __construct() {
-			// Add product to cart (Use priority 20 to avoid being overridden by Subscriptions plugin)
-               add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'handle_add_to_cart' ), 20, 3 );
-               
-               // Admin functions
-               add_filter( "plugin_action_links_" . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );  
-               add_filter( 'woocommerce_get_sections_products', array( $this, 'woocommerce_auto_add_section' ) );
-               add_filter( 'woocommerce_get_settings_products', array( $this, 'woocommerce_auto_add_settings' ), 10, 2 );
-          }
+            // Add product to cart (Use priority 11 just in case the Subscription plugin is removing all other products from the cart at priority 10)
+            add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'handle_add_to_cart' ), 11, 4 );
+           
+            // Admin functions
+            add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );  
+            add_filter( 'woocommerce_get_sections_products', array( $this, 'woocommerce_auto_add_section' ) );
+            add_filter( 'woocommerce_get_settings_products', array( $this, 'woocommerce_auto_add_settings' ), 10, 2 );
+        }
 
 		/**
 		 * Add to Cart action
            * https://docs.woocommerce.com/document/automatically-add-product-to-cart-on-visit/
 		 */
-		public function handle_add_to_cart( $passed, $product_id, $quantity ) {
+		public function handle_add_to_cart( $passed, $product_id, $quantity, $variation_id = '' ) {
             $trigger_category_id = get_option( 'woocommerce_auto_add_category_id' );
             $auto_add_product_id = get_option( 'woocommerce_auto_add_product_id' );
 
@@ -49,16 +49,16 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     
                     // If the product is not already in the cart, add it
                     if ( !$found )
-                         WC()->cart->add_to_cart( $auto_add_product_id );
-
+                        WC()->cart->add_to_cart( $auto_add_product_id );
+                        
                 }
                 
             }
 
             return $passed;
 		}
-          
-          
+        
+        
         /** 
         * Plugin Settings Link
         * https://hugh.blog/2012/07/27/wordpress-add-plugin-settings-link-to-plugins-page/
