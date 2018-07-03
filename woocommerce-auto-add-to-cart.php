@@ -14,9 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 // Check if WooCommerce is active (https://docs.woothemes.com/document/create-a-plugin/)
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 
-	class WooCommerce_Auto_Add {
+    class WooCommerce_Auto_Add {
 
-		public function __construct() {
+        public function __construct() {
             // Add product to cart (Use priority 11 just in case the Subscription plugin is removing all other products from the cart at priority 10)
             add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'handle_add_to_cart' ), 11, 4 );
            
@@ -26,11 +26,11 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             add_filter( 'woocommerce_get_settings_products', array( $this, 'woocommerce_auto_add_settings' ), 10, 2 );
         }
 
-		/**
-		 * Add to Cart action
+        /**
+         * Add to Cart action
            * https://docs.woocommerce.com/document/automatically-add-product-to-cart-on-visit/
-		 */
-		public function handle_add_to_cart( $passed, $product_id, $quantity, $variation_id = '' ) {
+         */
+        public function handle_add_to_cart( $passed, $product_id, $quantity, $variation_id = '' ) {
             $trigger_category_id = get_option( 'woocommerce_auto_add_category_id' );
             $auto_add_product_id = get_option( 'woocommerce_auto_add_product_id' );
 
@@ -56,7 +56,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             }
 
             return $passed;
-		}
+        }
         
         
         /** 
@@ -170,7 +170,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
            
            return $categories;
         }
-	}
-	new WooCommerce_Auto_Add;
+    }
+    new WooCommerce_Auto_Add;
 }
 
