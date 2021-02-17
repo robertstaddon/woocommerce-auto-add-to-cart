@@ -126,6 +126,11 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         **/
         protected static function subscription_renewal_payment( $product_id ) {
             global $wp;
+
+            // Check for resubscription
+            if ( isset( $_GET['resubscribe'] ) ) return true;
+            
+            // Check for subscription renewal
             if ( !empty( WC()->session->order_awaiting_payment ) || isset( $_GET['pay_for_order'] ) ) {
                 $order_id = !empty( WC()->session->order_awaiting_payment ) ? WC()->session->order_awaiting_payment : $wp->query_vars['order-pay'];
                 return wcs_order_contains_subscription( $order_id, 'renewal' );
