@@ -1,12 +1,13 @@
 <?php
 /**
-* Plugin Name: WooCommerce Auto Add to Cart
+* Plugin Name: Woo Auto Add to Cart
 * Description: Add a specified product automatically to the cart when any product in a particular category is purchased
-* Version: 1.0
-* Author: Abundant Designs LLC
+* Version: 1.1
+* Author: Abundant Designs
 * Author URI: https://www.abundantdesigns.com/
 * License: GPL2
 * Text Domain: woocommerce-auto-add-to-cart
+* Update URI: https://manage.abundantdesigns.com/wp-json/update-server/woocommerce-auto-add-to-cart/
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
@@ -18,7 +19,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
         public function __construct() {
             // Add product to cart (Use priority 11 just in case the Subscription plugin is removing all other products from the cart at priority 10)
-            add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'handle_add_to_cart' ), 11, 4 );
+            add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'handle_add_to_cart' ), 11, 6 );
            
             // Admin functions
             add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );  
@@ -30,14 +31,14 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
          * Add to Cart action
            * https://docs.woocommerce.com/document/automatically-add-product-to-cart-on-visit/
          */
-        public function handle_add_to_cart( $passed, $product_id, $quantity, $variation_id = '' ) {
+        public function handle_add_to_cart( $passed, $product_id, $quantity, $variation_id = '', $variations = array(), $cart_item_data = array() ) {
             $trigger_category_id = get_option( 'woocommerce_auto_add_category_id' );
             $auto_add_product_id = get_option( 'woocommerce_auto_add_product_id' );
 
             if ( has_term( $trigger_category_id, 'product_cat', $product_id ) ) {
                 
                 // Don't add product to cart if the product in the cart is part of a subscription renewal
-                if ( !self::subscription_renewal_payment( $product_id ) ) {
+                if ( ! self::subscription_renewal_payment( $product_id, $cart_item_data ) ) {
 
                     // Check if product to auto add is already in the cart
                     $found = false;
@@ -124,17 +125,36 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         * @return 2.0.13
         * @return bool
         **/
-        protected static function subscription_renewal_payment( $product_id ) {
-            global $wp;
+        protected static function subscription_renewal_payment( $product_id, $cart_item_data = array() ) {
+            unset( $product_id );
 
-            // Check for resubscription
-            if ( isset( $_GET['resubscribe'] ) ) return true;
-            
-            // Check for subscription renewal
-            if ( !empty( WC()->session->order_awaiting_payment ) || isset( $_GET['pay_for_order'] ) ) {
-                $order_id = !empty( WC()->session->order_awaiting_payment ) ? WC()->session->order_awaiting_payment : $wp->query_vars['order-pay'];
-                return wcs_order_contains_subscription( $order_id, 'renewal' );
+            if ( isset( $_GET['resubscribe'] ) || isset( $cart_item_data['subscription_resubscribe'] ) ) {
+                return true;
             }
+
+            if ( function_exists( 'wcs_cart_contains_resubscribe' ) && wcs_cart_contains_resubscribe() ) {
+                return true;
+            }
+
+            if ( function_exists( 'wcs_cart_contains_renewal' ) && wcs_cart_contains_renewal() ) {
+                return true;
+            }
+
+            $awaiting_payment = ( WC()->session && ! empty( WC()->session->order_awaiting_payment ) )
+                ? WC()->session->order_awaiting_payment
+                : 0;
+
+            if ( $awaiting_payment || isset( $_GET['pay_for_order'] ) ) {
+                global $wp;
+                $order_id = $awaiting_payment
+                    ? $awaiting_payment
+                    : absint( $wp->query_vars['order-pay'] ?? 0 );
+
+                if ( $order_id && function_exists( 'wcs_order_contains_subscription' ) && wcs_order_contains_subscription( $order_id, array( 'renewal', 'resubscribe' ) ) ) {
+                    return true;
+                }
+            }
+
             return false;
         }  
         
